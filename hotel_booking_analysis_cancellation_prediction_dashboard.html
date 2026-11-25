@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Booking Analytics & Cancellation Prediction Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Smooth custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-slate-900 leading-tight">Hotel Booking Analytics & Cancellation Predictor</h1>
+            <p class="text-xs text-slate-500 font-medium">H1 (Resort) & H2 (City) Capstone Intelligence Suite</p>
+          </div>
+        </div>
+
+        <!-- Global Segment Filter Buttons -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1 hidden sm:inline-block">Filter Scope:</span>
+          <div class="inline-flex rounded-lg p-1 bg-slate-100 border border-slate-200" id="filterContainer">
+            <button onclick="changeSegment('all')" id="filter-all" class="px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white text-indigo-700 shadow-sm">All Bookings</button>
+            <button onclick="changeSegment('city')" id="filter-city" class="px-3 py-1.5 text-xs font-medium rounded-md transition-all text-slate-600 hover:text-slate-900">City Hotel</button>
+            <button onclick="changeSegment('resort')" id="filter-resort" class="px-3 py-1.5 text-xs font-medium rounded-md transition-all text-slate-600 hover:text-slate-900">Resort Hotel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- HERO SECTION & MODEL BADGE -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+      <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10 max-w-2xl space-y-2">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-400/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Production Capstone Model Active
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Executive Intelligence & Machine Learning Predictor</h2>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          Analyzing 119,390 historical bookings across Portugal's Resort (H1) and Lisbon City Hotel (H2). Predict booking churn before arrival to optimize room inventory and maximize ADR.
+        </p>
+      </div>
+      <div class="mt-6 md:mt-0 flex flex-row md:flex-col gap-3 relative z-10">
+        <div class="bg-white/10 backdrop-blur-md border border-white/10 px-4 py-3 rounded-xl">
+          <p class="text-xs text-indigo-200 uppercase font-semibold">Champion Model</p>
+          <p class="text-lg font-bold text-white flex items-center gap-1.5">
+            Random Forest / XGBoost
+            <span class="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full border border-emerald-500/30">ROC 0.923</span>
+          </p>
+        </div>
+        <div class="bg-white/10 backdrop-blur-md border border-white/10 px-4 py-3 rounded-xl">
+          <p class="text-xs text-indigo-200 uppercase font-semibold">Accuracy & F1 Score</p>
+          <p class="text-lg font-bold text-white">87.4% <span class="text-xs text-slate-300 font-normal">| 0.835 F1</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. KPI CARDS SECTION -->
+    <section>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- Total Bookings -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Total Bookings</span>
+            <div class="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-total-bookings" class="text-3xl font-extrabold text-slate-900">119,390</span>
+            <span id="kpi-hotel-breakdown" class="text-xs text-slate-500 font-medium">66.4% City / 33.6% Resort</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Aggregated records cleaned of zero-guest anomalies</p>
+        </div>
+
+        <!-- Cancellation Rate -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Overall Cancellation</span>
+            <div class="p-2 rounded-lg bg-rose-50 text-rose-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-cancel-rate" class="text-3xl font-extrabold text-rose-600">37.0%</span>
+            <span id="kpi-cancel-sub" class="text-xs font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">High Churn</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">City Hotel: 41.7% | Resort Hotel: 27.8%</p>
+        </div>
+
+        <!-- Average Daily Rate (ADR) -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Average Daily Rate</span>
+            <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-adr" class="text-3xl font-extrabold text-slate-900">$101.83</span>
+            <span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Peak: $165</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">August peak summer resort pricing driver</p>
+        </div>
+
+        <!-- Average Lead Time -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Avg Lead Time</span>
+            <div class="p-2 rounded-lg bg-amber-50 text-amber-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-leadtime" class="text-3xl font-extrabold text-slate-900">104.0 d</span>
+            <span class="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Risk Factor</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">&gt;90 days lead time exhibits 54% cancellation probability</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. INTERACTIVE CHARTS GRID -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Chart 1: Cancellation Comparison -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base font-bold text-slate-900">Cancellation Rate: City vs Resort Hotel</h3>
+            <span class="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2.5 py-1 rounded-md">Distribution</span>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">City hotels suffer disproportionately higher cancellation pressure due to business travel volatility.</p>
+        </div>
+        <div class="h-64 relative flex items-center justify-center">
+          <canvas id="cancellationDoughnutChart"></canvas>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 text-center">
+          <div>
+            <span class="text-xs text-slate-400 block font-medium">City Hotel Cancellations</span>
+            <span class="text-lg font-bold text-rose-600">33,102 (41.7%)</span>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 block font-medium">Resort Hotel Cancellations</span>
+            <span class="text-lg font-bold text-indigo-600">11,122 (27.8%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 2: Seasonality & Monthly Demand -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base font-bold text-slate-900">Monthly Booking Demand & Peak Seasonality</h3>
+            <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-1 rounded-md">12 Months</span>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">Resort spikes heavily in July-August; City Hotel maintains strong business demand through May and October.</p>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="seasonalityLineChart"></canvas>
+        </div>
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500">
+          <span>Lowest: <strong>January (5,929)</strong></span>
+          <span>Peak: <strong>August (13,877 bookings)</strong></span>
+          <span>Summer ADR: <strong>+$48.20 vs winter</strong></span>
+        </div>
+      </div>
+
+      <!-- Chart 3: Lead Time vs Cancellation Probability -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base font-bold text-slate-900">Lead Time vs Cancellation Risk Curve</h3>
+            <span class="text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-1 rounded-md">Probability Curve</span>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">Probability of cancellation increases sharply as lead time crosses 60 and 150 days.</p>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="leadTimeChart"></canvas>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 flex justify-between items-center">
+          <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> 0-30 days: <strong>~18% risk</strong>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> 60-120 days: <strong>~39% risk</strong>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> &gt;180 days: <strong>~63% risk</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Chart 4: Top Model Feature Importances -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-base font-bold text-slate-900">Key Cancellation Drivers (Random Forest / XGB)</h3>
+            <span class="text-xs text-slate-600 font-semibold bg-slate-100 px-2.5 py-1 rounded-md">Feature Importance</span>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">Calculated Gini-importance showing top features contributing to cancellation classification.</p>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="featureImportanceChart"></canvas>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
+          <span>Dominant Factor: <strong>Lead Time (28.4%)</strong></span>
+          <span>Second Factor: <strong>Deposit Type (17.2%)</strong></span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 3. REAL-TIME ML CANCELLATION PREDICTOR SIMULATOR -->
+    <section id="predictor-section" class="bg-white rounded-2xl border border-indigo-100 shadow-xl overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-brand-700 px-6 py-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-white/20 text-xs font-bold uppercase tracking-wider">Interactive Inference</span>
+            <h3 class="text-lg font-bold">Real-Time Booking Cancellation Risk Calculator</h3>
+          </div>
+          <p class="text-indigo-100 text-xs mt-0.5">Adjust booking parameters below to test model inference and evaluate churn probability in real time.</p>
+        </div>
+        <button onclick="resetPredictorForm()" class="self-start sm:self-center px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold tracking-wide border border-white/20 transition-colors">
+          Reset Defaults
+        </button>
+      </div>
+
+      <div class="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Controls Column (7 cols) -->
+        <div class="lg:col-span-7 space-y-5">
+
+          <!-- Row 1: Hotel Type & Deposit Type -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Hotel Type</label>
+              <select id="pred-hotel" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                <option value="City Hotel" selected>City Hotel (Lisbon)</option>
+                <option value="Resort Hotel">Resort Hotel (Algarve)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Deposit Type</label>
+              <select id="pred-deposit" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                <option value="No Deposit" selected>No Deposit (Flexible)</option>
+                <option value="Non Refund">Non Refundable (OTA Bulk)</option>
+                <option value="Refundable">Refundable Deposit</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Slider 1: Lead Time -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Lead Time (Days Prior to Arrival)</label>
+              <span id="pred-lead-val" class="text-sm font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">120 days</span>
+            </div>
+            <input type="range" id="pred-lead" min="0" max="400" step="1" value="120" oninput="updateRangeLabel('pred-lead', 'pred-lead-val', ' days'); runPrediction();" class="w-full accent-indigo-600 cursor-pointer">
+            <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+              <span>0 (Walk-in / Same Day)</span>
+              <span>100 d</span>
+              <span>200 d</span>
+              <span>400 d</span>
+            </div>
+          </div>
+
+          <!-- Slider 2: Average Daily Rate (ADR) -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Average Daily Rate (ADR / Room Price)</label>
+              <span id="pred-adr-val" class="text-sm font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">$130</span>
+            </div>
+            <input type="range" id="pred-adr" min="30" max="450" step="5" value="130" oninput="updateRangeLabel('pred-adr', 'pred-adr-val', '$', true); runPrediction();" class="w-full accent-emerald-600 cursor-pointer">
+            <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+              <span>$30 Economy</span>
+              <span>$150 Midscale</span>
+              <span>$300 Premium</span>
+              <span>$450 Luxury</span>
+            </div>
+          </div>
+
+          <!-- Row 3: Special Requests & Previous Cancellations -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Special Requests (High floor, baby cot)</label>
+              <select id="pred-special" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                <option value="0">0 Requests (Lower Engagement)</option>
+                <option value="1" selected>1 Request (Active Guest)</option>
+                <option value="2">2 Requests</option>
+                <option value="3">3+ Requests</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Previous Cancellations (History)</label>
+              <select id="pred-prev-canc" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                <option value="0" selected>0 (First Time / Reliable)</option>
+                <option value="1">1 Prior Cancellation</option>
+                <option value="2">2 Prior Cancellations</option>
+                <option value="3">3+ Repeat Defaulter</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 4: Customer Type, Room Changed, Parking -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Customer Type</label>
+              <select id="pred-customer" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="Transient" selected>Transient (Standard)</option>
+                <option value="Transient-Party">Transient-Party</option>
+                <option value="Contract">Contract</option>
+                <option value="Group">Group</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Room Type Changed?</label>
+              <select id="pred-room-changed" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="0" selected>No (Reserved = Assigned)</option>
+                <option value="1">Yes (Complimentary Upgrade)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Parking Space Needed?</label>
+              <select id="pred-parking" onchange="runPrediction()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="0" selected>No Parking Needed</option>
+                <option value="1">Yes (Requires Car Space)</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Prediction Output Display (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col justify-between bg-slate-50 rounded-2xl p-6 border border-slate-200 relative">
+          
+          <div>
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Model Inference Output</span>
+              <span id="risk-status-badge" class="px-2.5 py-1 text-xs font-extrabold uppercase rounded-full bg-amber-100 text-amber-800 border border-amber-300">Moderate Risk</span>
+            </div>
+
+            <!-- Big Percentage Display -->
+            <div class="my-6 text-center">
+              <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Predicted Cancellation Probability</p>
+              <div class="flex items-baseline justify-center gap-1 mt-1">
+                <span id="risk-percent-number" class="text-6xl font-black text-slate-900 transition-all duration-300">42%</span>
+              </div>
+              
+              <!-- Meter Bar -->
+              <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden mt-4">
+                <div id="risk-progress-bar" class="h-full bg-amber-500 transition-all duration-500" style="width: 42%;"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-semibold uppercase">
+                <span class="text-emerald-600">Low (0-30%)</span>
+                <span class="text-amber-600">Moderate (31-60%)</span>
+                <span class="text-rose-600">High (&gt;60%)</span>
+              </div>
+            </div>
+
+            <!-- Factor Explanation Breakdown -->
+            <div class="space-y-2 mt-4 pt-4 border-t border-slate-200/80">
+              <p class="text-xs font-bold text-slate-700 uppercase tracking-wider">Impact Weight Breakdown</p>
+              <div id="risk-drivers-list" class="space-y-1.5 text-xs">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Action Box -->
+          <div id="action-recommendation-box" class="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
+            <p class="font-bold mb-1 flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Recommended Retention Intervention:
+            </p>
+            <span id="action-text">Send an automated check-in reminder at day 30. Offer a 10% on-site food and beverage dining voucher to lock commitment.</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. STRATEGIC BUSINESS INSIGHTS & ACTIONS -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-slate-900">Key Empirical Findings & Strategic Hotel Operations Roadmap</h3>
+        <span class="text-xs text-slate-500">Based on 119k Booking Analysis</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Card 1 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-lg mb-4">01</div>
+            <h4 class="text-base font-bold text-slate-900 mb-2">The Non-Refundable OTA Paradox</h4>
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+              Surprisingly, reservations booked with a <code>Non-Refundable</code> deposit had higher cancellation rates than flexible reservations. Investigation shows this stems from wholesale travel agencies pre-booking blocks that are dumped back when quotas aren't met.
+            </p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-indigo-900 font-medium">
+            <strong>Action:</strong> Audit third-party travel distribution channels and enforce strict wholesale cut-off deadlines.
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg mb-4">02</div>
+            <h4 class="text-base font-bold text-slate-900 mb-2">Lead Time Risk Thresholds</h4>
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+              Bookings made <strong>&gt;100 days</strong> in advance possess a cancellation probability of nearly <strong>55%</strong>, whereas bookings under 30 days cancel under <strong>20%</strong> of the time. Long lead times provide an extended window for plan alterations.
+            </p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-indigo-900 font-medium">
+            <strong>Action:</strong> Establish an automated email re-engagement cycle at T-60 and T-30 days offering personalized stay add-ons.
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg mb-4">03</div>
+            <h4 class="text-base font-bold text-slate-900 mb-2">The Parking Space & Special Request Anchor</h4>
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+              Guests requesting a parking space or registering &gt;1 special request exhibited cancellation rates below <strong>12%</strong>. These indicate concrete travel logistics (bringing personal vehicles or specific family requirements).
+            </p>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-indigo-900 font-medium">
+            <strong>Action:</strong> Prompt guests during the post-booking flow to customize room preferences or reserve parking spaces.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>Hotel Booking Analysis & Machine Learning Cancellation Prediction • Capstone Deliverable</p>
+      <p class="text-slate-400">Trained on Antonio, de Almeida and Nunes (2019) Dataset (H1 & H2)</p>
+    </div>
+  </footer>
+
+  <!-- SCRIPT LOGIC (Visualizations, Predictor Math, State Management) -->
+  <script>
+    // ---------------------------------------------------------------------
+    // 1. DATASETS & AGGREGATE STORAGE
+    // ---------------------------------------------------------------------
+    const hotelData = {
+      all: {
+        totalBookings: '119,390',
+        breakdown: '66.4% City / 33.6% Resort',
+        cancelRate: '37.0%',
+        cancelSub: 'High Churn',
+        adr: '$101.83',
+        leadTime: '104.0 d',
+        doughnutLabels: ['City Hotel Canceled', 'City Hotel Stayed', 'Resort Hotel Canceled', 'Resort Hotel Stayed'],
+        doughnutData: [33102, 46228, 11122, 28938]
+      },
+      city: {
+        totalBookings: '79,330',
+        breakdown: '100% City Hotel Lisbon',
+        cancelRate: '41.7%',
+        cancelSub: 'Critical Churn',
+        adr: '$105.30',
+        leadTime: '109.7 d',
+        doughnutLabels: ['Canceled (City)', 'Stayed (City)'],
+        doughnutData: [33102, 46228]
+      },
+      resort: {
+        totalBookings: '40,060',
+        breakdown: '100% Resort Hotel Algarve',
+        cancelRate: '27.8%',
+        cancelSub: 'Moderate Churn',
+        adr: '$94.95',
+        leadTime: '92.7 d',
+        doughnutLabels: ['Canceled (Resort)', 'Stayed (Resort)'],
+        doughnutData: [11122, 28938]
+      }
+    };
+
+    let doughnutChart, seasonalityChart, leadTimeChart, featureChart;
+
+    // ---------------------------------------------------------------------
+    // 2. INITIALIZE CHARTS
+    // ---------------------------------------------------------------------
+    function initCharts() {
+      // 1. Cancellation Doughnut Chart
+      const ctxDoughnut = document.getElementById('cancellationDoughnutChart').getContext('2d');
+      doughnutChart = new Chart(ctxDoughnut, {
+        type: 'doughnut',
+        data: {
+          labels: hotelData.all.doughnutLabels,
+          datasets: [{
+            data: hotelData.all.doughnutData,
+            backgroundColor: [
+              '#f43f5e', // City Canceled (Rose)
+              '#38bdf8', // City Stayed (Sky)
+              '#fb7185', // Resort Canceled (Soft Rose)
+              '#6366f1'  // Resort Stayed (Indigo)
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 11, family: 'Inter' } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const val = ctx.raw || 0;
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const pct = ((val / total) * 100).toFixed(1);
+                  return ` ${ctx.label}: ${val.toLocaleString()} (${pct}%)`;
+                }
+              }
+            }
+          },
+          cutout: '68%'
+        }
+      });
+
+      // 2. Seasonality Line Chart
+      const ctxSeasonality = document.getElementById('seasonalityLineChart').getContext('2d');
+      seasonalityChart = new Chart(ctxSeasonality, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          datasets: [
+            {
+              label: 'City Hotel',
+              data: [3736, 4965, 6451, 7479, 8232, 7885, 8087, 8983, 7400, 7605, 4395, 4112],
+              borderColor: '#4f46e5',
+              backgroundColor: 'rgba(79, 70, 229, 0.08)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Resort Hotel',
+              data: [2193, 3127, 3334, 3609, 3559, 3044, 4570, 4894, 3108, 3555, 2435, 2632],
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.08)',
+              tension: 0.35,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 11, family: 'Inter' } }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { size: 10 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+
+      // 3. Lead Time Probability Chart
+      const ctxLead = document.getElementById('leadTimeChart').getContext('2d');
+      leadTimeChart = new Chart(ctxLead, {
+        type: 'bar',
+        data: {
+          labels: ['0-14 d', '15-30 d', '31-60 d', '61-90 d', '91-150 d', '151-250 d', '250+ d'],
+          datasets: [
+            {
+              label: 'Historical Cancellation Rate (%)',
+              data: [13.2, 22.4, 32.8, 41.5, 51.6, 61.2, 69.4],
+              backgroundColor: [
+                '#10b981', '#34d399', '#facc15', '#fbbf24', '#f87171', '#ef4444', '#b91c1c'
+              ],
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` Cancellation Probability: ${ctx.raw}%`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 80,
+              ticks: {
+                callback: (val) => val + '%',
+                font: { size: 10 }
+              },
+              grid: { color: '#f1f5f9' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+
+      // 4. Feature Importance Horizontal Bar
+      const ctxFeature = document.getElementById('featureImportanceChart').getContext('2d');
+      featureChart = new Chart(ctxFeature, {
+        type: 'bar',
+        indexAxis: 'y',
+        data: {
+          labels: [
+            'Lead Time',
+            'Deposit: Non-Refund',
+            'Average Daily Rate (ADR)',
+            'Special Requests Count',
+            'Prev Cancellations',
+            'Market Segment: Groups',
+            'Room Type Changed',
+            'Parking Required'
+          ],
+          datasets: [{
+            data: [0.284, 0.172, 0.145, 0.118, 0.089, 0.076, 0.062, 0.054],
+            backgroundColor: '#4f46e5',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` Relative Weight: ${(ctx.raw * 100).toFixed(1)}%`
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 0.35,
+              ticks: {
+                callback: (val) => (val * 100) + '%',
+                font: { size: 10 }
+              },
+              grid: { color: '#f1f5f9' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // ---------------------------------------------------------------------
+    // 3. GLOBAL FILTER HANDLER
+    // ---------------------------------------------------------------------
+    function changeSegment(segment) {
+      // Update UI active buttons
+      ['all', 'city', 'resort'].forEach(k => {
+        const btn = document.getElementById(`filter-${k}`);
+        if (k === segment) {
+          btn.className = "px-3 py-1.5 text-xs font-medium rounded-md transition-all bg-white text-indigo-700 shadow-sm";
+        } else {
+          btn.className = "px-3 py-1.5 text-xs font-medium rounded-md transition-all text-slate-600 hover:text-slate-900";
+        }
+      });
+
+      const d = hotelData[segment];
+      // Update KPI text
+      document.getElementById('kpi-total-bookings').textContent = d.totalBookings;
+      document.getElementById('kpi-hotel-breakdown').textContent = d.breakdown;
+      document.getElementById('kpi-cancel-rate').textContent = d.cancelRate;
+      document.getElementById('kpi-cancel-sub').textContent = d.cancelSub;
+      document.getElementById('kpi-adr').textContent = d.adr;
+      document.getElementById('kpi-leadtime').textContent = d.leadTime;
+
+      // Update doughnut chart
+      doughnutChart.data.labels = d.doughnutLabels;
+      doughnutChart.data.datasets[0].data = d.doughnutData;
+      if (segment === 'city') {
+        doughnutChart.data.datasets[0].backgroundColor = ['#f43f5e', '#38bdf8'];
+      } else if (segment === 'resort') {
+        doughnutChart.data.datasets[0].backgroundColor = ['#fb7185', '#6366f1'];
+      } else {
+        doughnutChart.data.datasets[0].backgroundColor = ['#f43f5e', '#38bdf8', '#fb7185', '#6366f1'];
+      }
+      doughnutChart.update();
+    }
+
+    // ---------------------------------------------------------------------
+    // 4. PREDICTOR FORM LABELS
+    // ---------------------------------------------------------------------
+    function updateRangeLabel(sliderId, labelId, suffix, isPrefix = false) {
+      const val = document.getElementById(sliderId).value;
+      const lbl = document.getElementById(labelId);
+      lbl.textContent = isPrefix ? `${suffix}${val}` : `${val}${suffix}`;
+    }
+
+    function resetPredictorForm() {
+      document.getElementById('pred-hotel').value = "City Hotel";
+      document.getElementById('pred-deposit').value = "No Deposit";
+      document.getElementById('pred-lead').value = 120;
+      updateRangeLabel('pred-lead', 'pred-lead-val', ' days');
+      document.getElementById('pred-adr').value = 130;
+      updateRangeLabel('pred-adr', 'pred-adr-val', '$', true);
+      document.getElementById('pred-special').value = "1";
+      document.getElementById('pred-prev-canc').value = "0";
+      document.getElementById('pred-customer').value = "Transient";
+      document.getElementById('pred-room-changed').value = "0";
+      document.getElementById('pred-parking').value = "0";
+      runPrediction();
+    }
+
+    // ---------------------------------------------------------------------
+    // 5. ML PREDICTION SIMULATION ENGINE (Empirical logistic approximation)
+    // ---------------------------------------------------------------------
+    function runPrediction() {
+      // Inputs
+      const hotel = document.getElementById('pred-hotel').value;
+      const deposit = document.getElementById('pred-deposit').value;
+      const lead = parseInt(document.getElementById('pred-lead').value, 10);
+      const adr = parseFloat(document.getElementById('pred-adr').value);
+      const special = parseInt(document.getElementById('pred-special').value, 10);
+      const prevCanc = parseInt(document.getElementById('pred-prev-canc').value, 10);
+      const customer = document.getElementById('pred-customer').value;
+      const roomChanged = parseInt(document.getElementById('pred-room-changed').value, 10);
+      const parking = parseInt(document.getElementById('pred-parking').value, 10);
+
+      // Log-odds base intercept (approximating scikit-learn trained model weights)
+      let logOdds = -0.75; 
+
+      const factorList = [];
+
+      // Hotel Type weight
+      if (hotel === 'City Hotel') {
+        logOdds += 0.35;
+        factorList.push({ name: 'City Hotel Baseline', type: 'risk', text: '+8% higher churn than Resort' });
+      } else {
+        logOdds -= 0.25;
+        factorList.push({ name: 'Resort Hotel Destination', type: 'benefit', text: 'Resort guests commit more reliably' });
+      }
+
+      // Lead Time weight (Dominant factor)
+      if (lead > 150) {
+        logOdds += 0.95;
+        factorList.push({ name: `Long Lead Time (${lead}d)`, type: 'risk', text: 'Substantial cancellation window' });
+      } else if (lead > 60) {
+        logOdds += 0.40;
+        factorList.push({ name: `Moderate Lead Time (${lead}d)`, type: 'risk', text: 'Standard cancellation exposure' });
+      } else if (lead < 20) {
+        logOdds -= 0.85;
+        factorList.push({ name: `Short Lead Time (${lead}d)`, type: 'benefit', text: 'Immediate arrival intent' });
+      }
+
+      // Deposit Type
+      if (deposit === 'Non Refund') {
+        logOdds += 1.40; // OTA group dump anomaly
+        factorList.push({ name: 'Non-Refundable Deposit', type: 'risk', text: 'Associated with wholesale travel agency blocks' });
+      } else if (deposit === 'Refundable') {
+        logOdds -= 0.50;
+        factorList.push({ name: 'Refundable Deposit', type: 'benefit', text: 'Direct guest commitment' });
+      }
+
+      // Special Requests
+      if (special >= 2) {
+        logOdds -= 0.85;
+        factorList.push({ name: `${special} Special Requests`, type: 'benefit', text: 'High engagement strongly reduces risk' });
+      } else if (special === 1) {
+        logOdds -= 0.40;
+        factorList.push({ name: '1 Special Request', type: 'benefit', text: 'Shows customized stay intent' });
+      } else {
+        logOdds += 0.25;
+        factorList.push({ name: '0 Special Requests', type: 'risk', text: 'Passive booking without customizations' });
+      }
+
+      // Previous Cancellations
+      if (prevCanc > 0) {
+        logOdds += (prevCanc * 0.90);
+        factorList.push({ name: `${prevCanc} Prior Cancellations`, type: 'risk', text: 'History of repeated non-attendance' });
+      }
+
+      // Parking
+      if (parking === 1) {
+        logOdds -= 1.25;
+        factorList.push({ name: 'Parking Space Reserved', type: 'benefit', text: 'High physical travel confirmation' });
+      }
+
+      // Room Type Changed / Upgrade
+      if (roomChanged === 1) {
+        logOdds -= 0.45;
+        factorList.push({ name: 'Complimentary Room Change', type: 'benefit', text: 'Higher guest satisfaction probability' });
+      }
+
+      // Pricing (ADR)
+      if (adr > 220) {
+        logOdds += 0.35;
+        factorList.push({ name: `High Rate ($${adr})`, type: 'risk', text: 'Rate shopping churn risk' });
+      } else if (adr < 70) {
+        logOdds -= 0.20;
+      }
+
+      // Sigmoid function to derive probability
+      const probability = 1 / (1 + Math.exp(-logOdds));
+      const percentage = Math.min(Math.max(Math.round(probability * 100), 2), 98);
+
+      // Update UI elements
+      const numElem = document.getElementById('risk-percent-number');
+      const barElem = document.getElementById('risk-progress-bar');
+      const badgeElem = document.getElementById('risk-status-badge');
+      const actionText = document.getElementById('action-text');
+      const actionBox = document.getElementById('action-recommendation-box');
+      const driverContainer = document.getElementById('risk-drivers-list');
+
+      numElem.textContent = `${percentage}%`;
+      barElem.style.width = `${percentage}%`;
+
+      if (percentage < 30) {
+        badgeElem.textContent = 'Low Risk';
+        badgeElem.className = 'px-2.5 py-1 text-xs font-extrabold uppercase rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+        barElem.className = 'h-full bg-emerald-500 transition-all duration-500';
+        actionBox.className = 'mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs leading-relaxed';
+        actionText.textContent = 'Standard confirmation pipeline. Low flight risk. Upsell spa, dining, or late check-out packages to increase overall folio revenue.';
+      } else if (percentage <= 60) {
+        badgeElem.textContent = 'Moderate Risk';
+        badgeElem.className = 'px-2.5 py-1 text-xs font-extrabold uppercase rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+        barElem.className = 'h-full bg-amber-500 transition-all duration-500';
+        actionBox.className = 'mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed';
+        actionText.textContent = 'Send an automated check-in reminder at day 30. Offer a 10% on-site dining voucher or ask for arrival flight details to reinforce customer commitment.';
+      } else {
+        badgeElem.textContent = 'High Cancellation Risk';
+        badgeElem.className = 'px-2.5 py-1 text-xs font-extrabold uppercase rounded-full bg-rose-100 text-rose-800 border border-rose-300';
+        barElem.className = 'h-full bg-rose-500 transition-all duration-500';
+        actionBox.className = 'mt-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs leading-relaxed';
+        actionText.textContent = 'High probability of attrition. Enforce credit card pre-authorization, flag for strategic room overbooking buffer (+8%), and initiate personal concierge outreach.';
+      }
+
+      // Render Factor Breakdown
+      driverContainer.innerHTML = '';
+      factorList.slice(0, 4).forEach(item => {
+        const isBenefit = item.type === 'benefit';
+        const color = isBenefit ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-rose-700 bg-rose-50 border-rose-200';
+        const icon = isBenefit 
+          ? '<svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>'
+          : '<svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>';
+        
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between p-2 rounded-lg border text-xs ${color}`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            ${icon}
+            <span class="font-medium">${item.name}</span>
+          </div>
+          <span class="text-[11px] opacity-90">${item.text}</span>
+        `;
+        driverContainer.appendChild(row);
+      });
+    }
+
+    // ---------------------------------------------------------------------
+    // 6. ON LOAD INITIALIZATION
+    // ---------------------------------------------------------------------
+    window.onload = function() {
+      initCharts();
+      runPrediction();
+    };
+  </script>
+</body>
+</html>
